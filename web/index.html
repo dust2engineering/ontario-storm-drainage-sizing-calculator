@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ontario Storm Drainage Sizing Calculator | Dust 2 Engineering Inc.</title>
+<style>
+:root{color-scheme:dark}
+body{background:#0e1116;color:#e6e9ee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;padding:24px;line-height:1.55}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:1.55rem;line-height:1.25;margin:.2em 0 .1em}
+h2{font-size:1.15rem;margin-top:1.6em;color:#ffd479}
+.sub{color:#9fb0c3;margin:.2em 0 1.2em}
+.card{background:#161b22;border:1px solid #2b333f;border-radius:12px;padding:18px;margin:14px 0}
+label{display:block;margin:.7em 0 .25em;color:#c8d3e0;font-size:.95rem}
+input,select{width:100%;box-sizing:border-box;background:#0e1116;color:#e6e9ee;border:1px solid #39424f;border-radius:8px;padding:9px;font-size:1rem}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.row{grid-template-columns:1fr}}
+button{background:#f0a832;color:#14100a;border:0;border-radius:8px;padding:11px 18px;font-size:1rem;font-weight:600;cursor:pointer;margin-top:14px}
+button.ghost{background:#232a35;color:#e6e9ee}
+pre{background:#0a0d11;border:1px solid #2b333f;border-radius:10px;padding:14px;white-space:pre-wrap;word-break:break-word;font-size:.92rem}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border:1px solid #2b333f;padding:6px 8px;text-align:left}
+th{background:#1b212b}
+.small{color:#9fb0c3;font-size:.88rem}
+a{color:#7cc4ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Ontario Storm Drainage Sizing Calculator</h1>
+<p class="sub">Roof area × SB-1 rainfall → leader and storm building drain sizes, from OBC Part 7 Tables 7.4.10.9 and 7.4.10.11.</p>
+<div class="card">
+<div class="row"><div><label>Roof area served (m&sup2;)</label><input id="area" type="number" value="600" min="0"></div>
+<div><label>SB-1 maximum 15-minute rainfall (mm)</label><input id="rain" type="number" value="28" min="0"></div></div>
+<label>Storm building drain slope</label>
+<select id="slope"><option value="0">1:400</option><option value="1">1:200</option><option value="2">1:133</option><option value="3">1:100</option><option value="4">1:68</option><option value="5">1:50</option><option value="6">1:25</option></select>
+<button onclick="go()">Size the storm pipes</button>
+</div>
+<h2>Result</h2>
+<pre id="out">Your storm pipe sizes will appear here.</pre>
+<p class="small">Ontario sizes storm drainage in litres of hydraulic load: roof area (m&sup2;) times the
+maximum 15-minute rainfall (mm) from Supplementary Standard SB-1 — about 28 mm across much of the GTA,
+but confirm your municipality. Leaders come from Table 7.4.10.11 and storm building drains from
+Table 7.4.10.9 by slope.</p>
+<p class="small">Free tool by <b>Dust 2 Engineering Inc.</b>, Mississauga, Ontario — building permit
+drawings for restaurants and small commercial projects across the GTA, stamped by an Ontario P.Eng.
+Flat rate $3,500–$5,000. Questions or a project to discuss: open an issue in this repository.</p>
+</div>
+<script>
+
+const DRAIN = {"3": [null, null, null, null, null, 2770, 3910], "4": [null, null, null, 4220, 5160, 5970, 8430], "5": [null, null, 6760, 7650, 9350, 10800, 15300], "6": [null, null, 10700, 12400, 15200, 17600, 24900], "8": [null, 18900, 23200, 26700, 32800, 37800, 53600], "10": [null, 34300, 41900, 48500, 59400, 68600, 97000], "12": [37400, 55900, 68300, 78700, 96500, 112000, 158000], "15": [71400, 101000, 124000, 143000, 175000, 202000, 287000]};
+const LEADERS = {"2": 1700, "2.5": 3070, "3": 5000, "4": 10800, "5": 19500, "6": 31800, "8": 68300};
+function go(){
+  const area = parseFloat(document.getElementById('area').value) || 0;
+  const rain = parseFloat(document.getElementById('rain').value) || 0;
+  const idx = parseInt(document.getElementById('slope').value);
+  const load = area * rain;
+  let out = 'Hydraulic load: ' + area + ' m2 x ' + rain + ' mm = ' + Math.round(load).toLocaleString('en-US') + ' L\n';
+  let lp = null;
+  for (const s in LEADERS){ if (LEADERS[s] >= load){ lp = [s, LEADERS[s]]; break; } }
+  out += lp ? ('Leader (Table 7.4.10.11): minimum NPS ' + lp[0] + ' (capacity ' + lp[1].toLocaleString('en-US') + ' L)\n') : 'Leader: exceeds the NPS 8 table value - split the roof between more leaders\n';
+  let dp = null;
+  for (const s in DRAIN){ const cap = DRAIN[s][idx]; if (cap !== null && cap >= load){ dp = [s, cap]; break; } }
+  const names = ['1 in 400','1 in 200','1 in 133','1 in 100','1 in 68','1 in 50','1 in 25'];
+  out += dp ? ('Storm building drain at slope ' + names[idx] + ' (Table 7.4.10.9): minimum NPS ' + dp[0] + ' (capacity ' + dp[1].toLocaleString('en-US') + ' L)') : ('Storm building drain at slope ' + names[idx] + ': exceeds the table - increase the slope or split the load.');
+  document.getElementById('out').textContent = out;
+}
+
+</script>
+</body>
+</html>
